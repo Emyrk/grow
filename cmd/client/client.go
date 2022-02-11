@@ -3,6 +3,8 @@ package main
 import (
 	"image/color"
 
+	"github.com/emyrk/grow/client/render"
+
 	"golang.org/x/xerrors"
 
 	mycmd "github.com/emyrk/grow/cmd"
@@ -44,10 +46,12 @@ var clientCmd = &cobra.Command{
 		players := world.NewPlayerSet()
 		me = players.AddPlayer(me)
 		g := game.NewGame(logger, screenWidth, screenHeight, players, me)
+		gr := render.NewGameRenderer(*g)
+
 		ebiten.SetWindowSize(screenWidth, screenHeight)
 		ebiten.SetWindowTitle("Game")
 		ebiten.SetWindowResizable(true)
-		if err := ebiten.RunGame(g); err != nil {
+		if err := ebiten.RunGame(gr); err != nil {
 			logger.Fatal().Err(err).Msg("game crashed")
 		}
 
