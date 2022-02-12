@@ -23,6 +23,7 @@ type GameClient struct {
 	Log zerolog.Logger
 	// SendGameEvents is for pushing events to a game server.
 	SendGameEvents ClientSendEvents
+	ClientMode     bool
 }
 
 func NewGameClient(log zerolog.Logger, cfg GameConfig) *GameClient {
@@ -59,6 +60,7 @@ func (c *GameClient) ReceiveGameEvents(ctx context.Context, gametick uint64, evt
 
 func (c *GameClient) UseServer(send ClientSendEvents) *GameClient {
 	c.SendGameEvents = send
+	c.ClientMode = true
 	return c
 }
 
@@ -67,7 +69,7 @@ func (c *GameClient) Update() error {
 	defer c.mu.Unlock()
 
 	eventPoint := events.SyncTick(c.Gametick)
-	if eventPoint {
+	if eventPoint && c.ClientMode {
 		evts, ok := c.syncedTicks[c.Gametick]
 		if !ok {
 			c.waiting++

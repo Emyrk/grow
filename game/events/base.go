@@ -1,6 +1,8 @@
 package events
 
-import "math/rand"
+import (
+	"github.com/emyrk/grow/internal/crand"
+)
 
 type baseEvent struct {
 	ID uint64
@@ -8,7 +10,7 @@ type baseEvent struct {
 
 func newBaseEvent() baseEvent {
 	return baseEvent{
-		ID: rand.Uint64(),
+		ID: crand.Uint64(),
 	}
 }
 

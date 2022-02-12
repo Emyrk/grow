@@ -3,23 +3,20 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"io"
-	"math/rand"
 	"net/http"
-	"time"
-
-	"golang.org/x/xerrors"
-
-	"nhooyr.io/websocket/wsjson"
 
 	"github.com/emyrk/grow/game/events"
+	"github.com/emyrk/grow/internal/crand"
 	"github.com/emyrk/grow/server/message"
 	"github.com/emyrk/grow/world"
 	"nhooyr.io/websocket"
+	"nhooyr.io/websocket/wsjson"
 )
 
 // HandleGame handles the communication between the server and clients for the game state.
 func (gs *Webserver) HandleGame(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
 	c, err := websocket.Accept(w, r, nil)
 	if err != nil {
 		_ = json.NewEncoder(w).Encode(err.Error())
@@ -27,18 +24,18 @@ func (gs *Webserver) HandleGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer c.Close(websocket.StatusInternalError, "connection closed")
+	id := world.PlayerID(crand.Uint64())
+	stopClient := func() {
+		cancel()
+		gs.Game.RemoveListener(id)
+		c.Close(websocket.StatusInternalError, "connection closed")
+	}
+	defer stopClient()
 
-	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
-	defer cancel()
-
-	id := world.PlayerID(rand.Uint64())
-	defer gs.Game.RemoveListener(id)
 	gs.Game.AddListener(id, func(gametick uint64, evts []events.Event) {
 		// Broadcast to the player
 		data, err := events.MarshalJsonEvents(evts)
 		if err != nil {
-			cancel()
 			gs.Log.Err(err).Msg("marshal events")
 			return
 		}
@@ -49,7 +46,6 @@ func (gs *Webserver) HandleGame(w http.ResponseWriter, r *http.Request) {
 		}
 		data, err = json.Marshal(msg)
 		if err != nil {
-			cancel()
 			gs.Log.Err(err).Msg("marshal event sync")
 			return
 		}
@@ -59,38 +55,34 @@ func (gs *Webserver) HandleGame(w http.ResponseWriter, r *http.Request) {
 			Payload:     data,
 		})
 		if err != nil {
-			cancel()
 			gs.Log.Err(err).Msg("marshal socket msg")
 			return
 		}
 
 		err = c.Write(ctx, websocket.MessageText, data)
 		if err != nil {
-			cancel()
 			gs.Log.Err(err).Msg("player broadcast")
+			stopClient()
 			return
 		}
 	})
 
 	log := gs.Log.With().Uint16("pid", uint16(id)).Logger()
 	for {
+		select {
+		case <-ctx.Done():
+			stopClient()
+			return
+		default:
+
+		}
 		var msg message.SocketMessage
 		err := wsjson.Read(ctx, c, &msg)
 		//_, data, err := c.Read(ctx)
 		if err != nil {
-			if xerrors.Is(err, io.EOF) {
-				continue
-			}
 			log.Err(err).Msg("websocket read")
 			break
 		}
-
-		//var msg message.SocketMessage
-		//err = json.Unmarshal(data, &msg)
-		//if err != nil {
-		//	log.Err(err).Msg("decode read")
-		//	break
-		//}
 
 		switch msg.MessageType {
 		case message.MTNewEvents:
@@ -105,6 +97,4 @@ func (gs *Webserver) HandleGame(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Debug().Uint64("msg_type", msg.MessageType).Msg("message from player")
 	}
-
-	_ = c.Close(websocket.StatusNormalClosure, "")
 }
