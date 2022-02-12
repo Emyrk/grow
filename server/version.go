@@ -13,7 +13,7 @@ type VersionStruct struct {
 	CompiledDate string `json:"compiled_date"`
 }
 
-func (GameServer) VersionHandler(w http.ResponseWriter, _ *http.Request) {
+func (Webserver) VersionHandler(w http.ResponseWriter, _ *http.Request) {
 	_ = json.NewEncoder(w).Encode(VersionStruct{
 		Version:      version.Version,
 		CommitSHA1:   version.CommitSHA1,

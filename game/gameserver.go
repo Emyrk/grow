@@ -1,7 +1,9 @@
 package game
 
 import (
+	"context"
 	"sync"
+	"time"
 
 	"github.com/emyrk/grow/game/events"
 	"github.com/emyrk/grow/world"
@@ -26,6 +28,22 @@ func NewGameServer(log zerolog.Logger, cfg GameConfig) *GameServer {
 		log:       log,
 	}
 	return c
+}
+
+func (g *GameServer) GameLoop(ctx context.Context) {
+	ticker := time.NewTicker(time.Second / 60)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			err := g.Update()
+			if err != nil {
+				g.log.Err(err).Msg("on tick")
+			}
+		}
+	}
 }
 
 func (g *GameServer) Update() error {

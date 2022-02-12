@@ -26,7 +26,7 @@ func NewWorld(width, height int, players PlayerSet) *World {
 	return w
 }
 
-// Claim sets the tile to the player's ID
+// Claim sets the tile to the player's GetID
 func (w *World) Claim(x, y int, playerID PlayerID) {
 	w.area[w.PointI(x, y)] = tile(playerID)
 }

@@ -3,15 +3,15 @@ package events
 import "math/rand"
 
 type baseEvent struct {
-	id uint64
+	ID uint64
 }
 
 func newBaseEvent() baseEvent {
 	return baseEvent{
-		id: rand.Uint64(),
+		ID: rand.Uint64(),
 	}
 }
 
-func (e baseEvent) ID() uint64 {
-	return e.id
+func (e baseEvent) GetID() uint64 {
+	return e.ID
 }

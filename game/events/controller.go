@@ -26,10 +26,13 @@ func NewEventController(logger zerolog.Logger) *EventController {
 
 // SendEvent will send the event to be queued to be played.
 func (w *EventController) SendEvent(e Event) error {
+	if e == nil {
+		return nil
+	}
 	select {
 	case w.newEvents <- e:
 	default:
-		return xerrors.Errorf("event queue full, rejected %d", e.ID())
+		return xerrors.Errorf("event queue full, rejected %d", e.GetID())
 	}
 	return nil
 }
@@ -57,7 +60,7 @@ func (ec *EventController) UpdateInOrder(w *world.World, gametick uint64) (bool,
 		} else {
 			ec.existingEvents[id] = c
 			if syncTick {
-				cleaned = append(cleaned, c.ID())
+				cleaned = append(cleaned, c.GetID())
 			}
 		}
 	}
@@ -76,8 +79,8 @@ func (ec *EventController) UpdateInOrder(w *world.World, gametick uint64) (bool,
 						Msg("update new event")
 				}
 				if c != nil {
-					ec.existingEvents[c.ID()] = e
-					cleaned = append(cleaned, c.ID())
+					ec.existingEvents[c.GetID()] = e
+					cleaned = append(cleaned, c.GetID())
 				}
 			default:
 				break NewEventLoop

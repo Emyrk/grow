@@ -1,21 +1,22 @@
 package render
 
 import (
+	"context"
+
 	"github.com/emyrk/grow/client/keybinds"
 	"github.com/emyrk/grow/game"
-	"github.com/emyrk/grow/game/events"
 	"github.com/emyrk/grow/world"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type GameRender struct {
-	game.GameClient
+	*game.GameClient
 
 	keyWatcher *keybinds.KeyWatcher
 	pixels     []byte
 }
 
-func NewGameRenderer(g game.GameClient, me *world.Player) *GameRender {
+func NewGameRenderer(g *game.GameClient, me *world.Player) *GameRender {
 	return &GameRender{
 		GameClient: g,
 		keyWatcher: keybinds.NewKeybinds(me),
@@ -24,14 +25,14 @@ func NewGameRenderer(g game.GameClient, me *world.Player) *GameRender {
 
 func (g *GameRender) Update() error {
 	// Watch for new user generated events.
-	// TODO: @emyrk these should push to the server, not the game directly
 	actions := g.keyWatcher.Update()
-	for i := range actions {
-		err := g.G.EC.SendEvent(actions[i])
+	if len(actions) > 0 {
+		err := g.SendGameEvents(context.Background(), actions)
 		if err != nil {
-			events.AddLogFields(g.Log.Error(), actions[i]).
+			g.Log.
 				Err(err).
-				Msg("send event")
+				Int("event_count", len(actions)).
+				Msg("send evts")
 		}
 	}
 	err := g.GameClient.Update()

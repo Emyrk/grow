@@ -2,6 +2,10 @@ package cmd
 
 import (
 	"context"
+	"time"
+
+	"github.com/emyrk/grow/game"
+	"github.com/emyrk/grow/internal/testdata"
 
 	"github.com/emyrk/grow/server"
 	"github.com/spf13/cobra"
@@ -24,7 +28,15 @@ var srvCommand = &cobra.Command{
 			Port: port,
 			Log:  log,
 		}
-		gs := server.NewGameServer(cfg, nil)
+
+		gD := testdata.TestGame()
+		gme := game.NewGameServer(log, gD.GameCfg)
+		go func() {
+			time.Sleep(time.Second * 5)
+			gme.GameLoop(ctx)
+		}()
+
+		gs := server.NewWebserver(cfg, gme)
 		go func() {
 			err := gs.Start()
 			if err != nil {

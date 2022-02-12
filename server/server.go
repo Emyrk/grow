@@ -11,8 +11,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// GameServer can run a single game.
-type GameServer struct {
+// Webserver can run a single game.
+type Webserver struct {
 	Srv  *http.Server
 	Log  zerolog.Logger
 	Game *game.GameServer
@@ -23,14 +23,14 @@ type ServerConfig struct {
 	Log  zerolog.Logger
 }
 
-func NewGameServer(cfg ServerConfig, gm *game.GameServer) *GameServer {
+func NewWebserver(cfg ServerConfig, gm *game.GameServer) *Webserver {
 	mux := chi.NewRouter()
 	srv := &http.Server{
 		Addr:    fmt.Sprintf("0.0.0.0:%d", cfg.Port),
 		Handler: mux,
 	}
 
-	gs := &GameServer{
+	gs := &Webserver{
 		Srv:  srv,
 		Log:  cfg.Log.With().Str("server", "server").Logger(),
 		Game: gm,
@@ -41,11 +41,11 @@ func NewGameServer(cfg ServerConfig, gm *game.GameServer) *GameServer {
 	return gs
 }
 
-func (gs *GameServer) Start() error {
+func (gs *Webserver) Start() error {
 	gs.Log.Info().Str("addr", gs.Srv.Addr).Msg("server listening")
 	return gs.Srv.ListenAndServe()
 }
 
-func (gs *GameServer) Close() error {
+func (gs *Webserver) Close() error {
 	return gs.Srv.Close()
 }
