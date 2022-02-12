@@ -2,42 +2,35 @@ package game
 
 import (
 	"github.com/emyrk/grow/game/events"
-	"github.com/emyrk/grow/game/keybinds"
 	"github.com/emyrk/grow/world"
 	"github.com/rs/zerolog"
 )
 
+type ProcessEvents func(gametick uint64, events []events.Event)
+
+type GameConfig struct {
+	Players world.PlayerSet
+	Width   int
+	Height  int
+}
+
 type Game struct {
-	World    *world.World
-	ec       *events.EventController
-	keybinds *keybinds.KeyWatcher
-	pixels   []byte
-	log      zerolog.Logger
+	World *world.World
+	EC    *events.EventController
+	Log   zerolog.Logger
 }
 
-func NewGame(log zerolog.Logger, width, height int, players world.PlayerSet, me *world.Player) *Game {
+func NewGame(log zerolog.Logger, cfg GameConfig) *Game {
 	return &Game{
-		World:    world.NewWorld(width, height, players),
-		ec:       events.NewEventController(log),
-		keybinds: keybinds.NewKeybinds(me),
+		World: world.NewWorld(cfg.Width, cfg.Height, cfg.Players),
+		EC:    events.NewEventController(log),
+		Log:   log.With().Str("service", "game").Logger(),
 	}
 }
 
-func (g *Game) Update() error {
-	actions := g.keybinds.Update()
-	for i := range actions {
-		err := g.ec.SendEvent(actions[i])
-		if err != nil {
-			events.AddLogFields(g.log.Error(), actions[i]).
-				Err(err).
-				Msg("send event")
-		}
-	}
-	g.ec.Update(g.World)
+// Update is called every 1/60 of a second
+func (g *Game) Update(gametick uint64) (bool, []events.Event) {
+	processEvents, evts := g.EC.Update(g.World, gametick)
 	g.World.Update()
-	return nil
-}
-
-func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return g.World.Width(), g.World.Height()
+	return processEvents, evts
 }

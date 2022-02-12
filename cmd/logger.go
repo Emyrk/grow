@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"os"
 	"strings"
 
 	"github.com/rs/zerolog"
@@ -34,5 +35,6 @@ func getLogger(cmd *cobra.Command) (zerolog.Logger, error) {
 
 	cmd.Context()
 
-	return log.Level(level), nil
+	logger := log.Level(level).Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	return logger, nil
 }

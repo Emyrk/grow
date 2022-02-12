@@ -20,10 +20,11 @@ func NewEventController(logger zerolog.Logger) *EventController {
 	return &EventController{
 		newEvents:      make(chan Event, 10000),
 		existingEvents: make(map[uint64]Event),
-		log:            logger,
+		log:            logger.With().Str("service", "game").Logger(),
 	}
 }
 
+// SendEvent will send the event to be queued to be played.
 func (w *EventController) SendEvent(e Event) error {
 	select {
 	case w.newEvents <- e:
@@ -33,7 +34,8 @@ func (w *EventController) SendEvent(e Event) error {
 	return nil
 }
 
-func (ec *EventController) UpdateInOrder(w *world.World, clean bool) {
+func (ec *EventController) UpdateInOrder(w *world.World, gametick uint64) (bool, []Event) {
+	syncTick := SyncTick(gametick)
 	var cleaned []uint64
 	// Process all events in the given event order.
 	// If an event id is 0, that means it is skipped.
@@ -54,43 +56,44 @@ func (ec *EventController) UpdateInOrder(w *world.World, clean bool) {
 			ec.eventOrder[idx] = 0
 		} else {
 			ec.existingEvents[id] = c
-			if clean {
+			if syncTick {
 				cleaned = append(cleaned, c.ID())
 			}
 		}
 	}
 
-NewEventLoop:
-	for {
-		select {
-		case e := <-ec.newEvents:
-			c, err := e.Tick(w)
-			if err != nil {
-				AddLogFields(ec.log.Error(), c).
-					Err(err).
-					Msg("update new event")
-			}
-			if c != nil {
-				ec.existingEvents[c.ID()] = e
-				if clean {
-					cleaned = append(cleaned, c.ID())
-				} else {
-					ec.eventOrder = append(ec.eventOrder, c.ID())
+	var newEvents []Event
+	if syncTick {
+	NewEventLoop:
+		for {
+			select {
+			case e := <-ec.newEvents:
+				newEvents = append(newEvents, e)
+				c, err := e.Tick(w)
+				if err != nil {
+					AddLogFields(ec.log.Error(), c).
+						Err(err).
+						Msg("update new event")
 				}
+				if c != nil {
+					ec.existingEvents[c.ID()] = e
+					cleaned = append(cleaned, c.ID())
+				}
+			default:
+				break NewEventLoop
 			}
-		default:
-			break NewEventLoop
 		}
+
 	}
 
 	// Removed all excess
-	if clean {
+	if syncTick {
 		ec.eventOrder = cleaned
 	}
+	return syncTick, newEvents
 }
 
-func (ec *EventController) Update(w *world.World) {
-	// Always clean until it's a problem
-	ec.UpdateInOrder(w, true)
-
+func (ec *EventController) Update(w *world.World, gametick uint64) (bool, []Event) {
+	sync, events := ec.UpdateInOrder(w, gametick)
+	return sync, events
 }

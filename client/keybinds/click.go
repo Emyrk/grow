@@ -4,6 +4,7 @@ import (
 	"github.com/emyrk/grow/game/events"
 	"github.com/emyrk/grow/world"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 // KeyWatcher watches all user keystrokes
@@ -16,14 +17,15 @@ type KeyWatcher struct {
 
 func NewKeybinds(me *world.Player) *KeyWatcher {
 	return &KeyWatcher{
-		me: me,
+		me:    me,
 		Click: ebiten.MouseButtonLeft,
 	}
 }
 
 func (k *KeyWatcher) Update() []events.Event {
 	var actions []events.Event
-	if ebiten.IsMouseButtonPressed(k.Click) {
+
+	if inpututil.IsMouseButtonJustPressed(k.Click) {
 		x, y := ebiten.CursorPosition()
 		actions = append(actions, events.NewClickEvent(k.me, x, y))
 	}

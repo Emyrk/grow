@@ -45,8 +45,12 @@ var clientCmd = &cobra.Command{
 		})
 		players := world.NewPlayerSet()
 		me = players.AddPlayer(me)
-		g := game.NewGame(logger, screenWidth, screenHeight, players, me)
-		gr := render.NewGameRenderer(*g)
+		g := game.NewGameClient(logger, game.GameConfig{
+			Players: players,
+			Width:   screenWidth,
+			Height:  screenHeight,
+		})
+		gr := render.NewGameRenderer(*g, me)
 
 		ebiten.SetWindowSize(screenWidth, screenHeight)
 		ebiten.SetWindowTitle("Game")

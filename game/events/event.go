@@ -1,6 +1,10 @@
 package events
 
 import (
+	"encoding/json"
+
+	"golang.org/x/xerrors"
+
 	"github.com/emyrk/grow/world"
 	"github.com/rs/zerolog"
 )
@@ -11,11 +15,65 @@ const (
 	LeftClickEvent = "left-click"
 )
 
+type marshalStruct struct {
+	EventType EventType       `json:"event_type"`
+	Payload   json.RawMessage `json:"payload"`
+}
+
+func UnmarshalJsonEvents(data []byte) ([]Event, error) {
+	var gEvts []marshalStruct
+	err := json.Unmarshal(data, &gEvts)
+	if err != nil {
+		return nil, xerrors.Errorf("unmarshal evts: %w", err)
+	}
+
+	evts := make([]Event, 0, len(gEvts))
+	for _, gEvt := range gEvts {
+		var e Event
+		switch gEvt.EventType {
+		case LeftClickEvent:
+			e = &ClickEvent{}
+		}
+		err := json.Unmarshal(data, e)
+		if err != nil {
+			return nil, xerrors.Errorf("unmarshal evt: %w", err)
+		}
+		evts = append(evts, e)
+	}
+
+	return evts, err
+}
+
+func MarshalJsonEvents(evts []Event) ([]byte, error) {
+	gEvts := make([]marshalStruct, len(evts))
+	for i, evt := range evts {
+		payload, err := json.Marshal(evt)
+		if err != nil {
+			return nil, xerrors.Errorf("marshal: %w", err)
+		}
+		gEvts[i] = marshalStruct{
+			EventType: evt.Type(),
+			Payload:   payload,
+		}
+	}
+
+	data, err := json.Marshal(gEvts)
+	if err != nil {
+		return nil, xerrors.Errorf("marshal gEvts: %w", err)
+	}
+	return data, nil
+}
+
 type Event interface {
 	ID() uint64
 	Type() EventType
 	// Tick will allow the event to advance 1 tick. If the event is done, it should return a nil.
 	Tick(w *world.World) (Event, error)
+
+	// Should optimize data later
+	//MarshalBinary() ([]byte, error)
+	//UnmarshalBinary(data []byte) error
+	//UnmarshalBinaryData(data []byte) ([]byte, error)
 }
 
 func AddLogFields(l *zerolog.Event, e Event) *zerolog.Event {

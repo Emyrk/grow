@@ -11,19 +11,17 @@ versionLDFlags:=-X "github.com/emyrk/grow/internal/version.Version=${version}" \
                -X "github.com/emyrk/grow/internal/version.CommitSHA1=${commit}" \
                -X "github.com/emyrk/grow/internal/version.CompiledDate=${timestamp}"
 
+.PHONY: build/client
 build/client:
 	go build \
     	-ldflags='$(versionLDFlags)' \
 		-o ./bin/client \
 		./cmd/client
 
-
-bin/server:
+build/server: bin/server
 	go build \
     	-ldflags='$(versionLDFlags)' \
 		-o ./bin/server \
 		./
 
-.PHONY: build/server
-build/server: bin/server
 
