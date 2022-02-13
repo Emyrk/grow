@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"io"
 
+	"github.com/emyrk/grow/internal/network"
+
+	"github.com/emyrk/grow/game"
+
 	"nhooyr.io/websocket/wsjson"
 
-	"github.com/emyrk/grow/game/events"
 	"github.com/emyrk/grow/server/message"
 	"github.com/rs/zerolog"
 	"golang.org/x/xerrors"
@@ -24,6 +27,7 @@ func Connect(ctx context.Context, log zerolog.Logger, address string) (*NetworkC
 	if err != nil {
 		return nil, xerrors.Errorf("dial: %w", err)
 	}
+	c.SetReadLimit(network.ReadLimit)
 
 	return &NetworkClient{
 		Conn: c,
@@ -64,23 +68,20 @@ func (c *NetworkClient) ReadMessages(ctx context.Context) <-chan *message.Socket
 	return msgs
 }
 
-func (c *NetworkClient) SendEvents(ctx context.Context, evts []events.Event) error {
-	data, err := events.MarshalJsonEvents(evts)
-	if err != nil {
-		return xerrors.Errorf("marshal evts: %w", err)
+func (c *NetworkClient) SendGameMessage(ctx context.Context) func(msgType game.GameMessageType, payload []byte) error {
+	return func(msgType game.GameMessageType, payload []byte) error {
+		smsg, err := json.Marshal(message.SocketMessage{
+			MessageType: message.MTGameMessage,
+			PayloadType: msgType,
+			Payload:     payload,
+		})
+		if err != nil {
+			return xerrors.Errorf("marshal socket msg: %w", err)
+		}
+		err = c.Conn.Write(ctx, websocket.MessageText, smsg)
+		if err != nil {
+			return xerrors.Errorf("send msg: %w", err)
+		}
+		return nil
 	}
-	msg, err := json.Marshal(message.SocketMessage{
-		MessageType: message.MTNewEvents,
-		Payload:     data,
-	})
-	if err != nil {
-		return xerrors.Errorf("marshal socket msg: %w", err)
-	}
-
-	err = c.Conn.Write(ctx, websocket.MessageText, msg)
-	if err != nil {
-		return xerrors.Errorf("send msg: %w", err)
-	}
-
-	return nil
 }

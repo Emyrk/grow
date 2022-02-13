@@ -83,7 +83,7 @@ var clientCmd = &cobra.Command{
 		gD := testdata.TestGame()
 
 		gc := game.NewGameClient(logger, gD.GameCfg).UseServer(
-			nc.SendEvents,
+			nc.SendGameMessage(ctx),
 		)
 		go network.HandleSocketMessages(ctx, gc, msgs)
 		gr := render.NewGameRenderer(gc, gD.Me)

@@ -20,6 +20,21 @@ type marshalStruct struct {
 	Payload   json.RawMessage `json:"payload"`
 }
 
+type EventList []Event
+
+func (l EventList) MarshalJSON() ([]byte, error) {
+	return MarshalJsonEvents([]Event(l))
+}
+
+func (l *EventList) UnmarshalJSON(data []byte) error {
+	evts, err := UnmarshalJsonEvents(data)
+	if err != nil {
+		return err
+	}
+	*l = evts
+	return nil
+}
+
 func UnmarshalJsonEvents(data []byte) ([]Event, error) {
 	var gEvts []marshalStruct
 	err := json.Unmarshal(data, &gEvts)

@@ -33,7 +33,7 @@ func (s *PlayerSet) AddPlayer(p *Player) *Player {
 	return p
 }
 
-type PlayerID uint16
+type PlayerID = uint16
 
 type Player struct {
 	ID    PlayerID

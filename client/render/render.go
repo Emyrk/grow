@@ -1,7 +1,9 @@
 package render
 
 import (
-	"context"
+	"encoding/json"
+
+	"golang.org/x/xerrors"
 
 	"github.com/emyrk/grow/client/keybinds"
 	"github.com/emyrk/grow/game"
@@ -27,7 +29,15 @@ func (g *GameRender) Update() error {
 	// Watch for new user generated events.
 	actions := g.keyWatcher.Update()
 	if len(actions) > 0 {
-		err := g.SendGameEvents(context.Background(), actions)
+		msg := game.NewEvents{
+			Eventlist: actions,
+		}
+		data, err := json.Marshal(msg)
+		if err != nil {
+			return xerrors.Errorf("marshal new evts: %w", err)
+		}
+
+		err = g.SendGameMessage(msg.Type(), data)
 		if err != nil {
 			g.Log.
 				Err(err).

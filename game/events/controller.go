@@ -37,6 +37,38 @@ func (w *EventController) SendEvent(e Event) error {
 	return nil
 }
 
+func (ec *EventController) ReplaceEventList(evts []Event) {
+	// Drain all new events
+NewEventDrain:
+	for {
+		select {
+		case <-ec.newEvents:
+		default:
+			break NewEventDrain
+		}
+	}
+
+	// Reset the lists and maps
+	ec.existingEvents = make(map[uint64]Event)
+	ec.eventOrder = make([]uint64, 0, len(evts))
+	for i := range evts {
+		evt := evts[i]
+		ec.eventOrder = append(ec.eventOrder, evt.GetID())
+		ec.existingEvents[evt.GetID()] = evt
+	}
+}
+
+func (ec *EventController) EventList() []Event {
+	list := make([]Event, 0, len(ec.existingEvents))
+	for _, v := range ec.eventOrder {
+		if v == 0 {
+			continue
+		}
+		list = append(list, ec.existingEvents[v])
+	}
+	return list
+}
+
 func (ec *EventController) UpdateInOrder(w *world.World, gametick uint64) (bool, []Event) {
 	syncTick := SyncTick(gametick)
 	var cleaned []uint64

@@ -6,7 +6,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type ProcessEvents func(gametick uint64, events []events.Event)
+type BroadcastGameMessage func(msgType GameMessageType, data []byte)
 
 type GameConfig struct {
 	Players world.PlayerSet

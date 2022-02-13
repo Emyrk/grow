@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/emyrk/grow/game/events"
+	"github.com/emyrk/grow/internal/network"
+
+	"github.com/emyrk/grow/game"
+
 	"github.com/emyrk/grow/internal/crand"
 	"github.com/emyrk/grow/server/message"
 	"github.com/emyrk/grow/world"
@@ -23,6 +26,7 @@ func (gs *Webserver) HandleGame(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	c.SetReadLimit(network.ReadLimit)
 
 	id := world.PlayerID(crand.Uint64())
 	stopClient := func() {
@@ -32,26 +36,10 @@ func (gs *Webserver) HandleGame(w http.ResponseWriter, r *http.Request) {
 	}
 	defer stopClient()
 
-	gs.Game.AddListener(id, func(gametick uint64, evts []events.Event) {
-		// Broadcast to the player
-		data, err := events.MarshalJsonEvents(evts)
-		if err != nil {
-			gs.Log.Err(err).Msg("marshal events")
-			return
-		}
-
-		msg := message.EventSync{
-			GameTick: gametick,
-			Events:   data,
-		}
-		data, err = json.Marshal(msg)
-		if err != nil {
-			gs.Log.Err(err).Msg("marshal event sync")
-			return
-		}
-
+	gs.Game.AddListener(id, func(msgType game.GameMessageType, data []byte) {
 		data, err = json.Marshal(message.SocketMessage{
-			MessageType: message.MTEventSync,
+			MessageType: message.MTGameMessage,
+			PayloadType: msgType,
 			Payload:     data,
 		})
 		if err != nil {
@@ -85,13 +73,13 @@ func (gs *Webserver) HandleGame(w http.ResponseWriter, r *http.Request) {
 		}
 
 		switch msg.MessageType {
-		case message.MTNewEvents:
-			evts, err := events.UnmarshalJsonEvents(msg.Payload)
+		case message.MTGameMessage:
+			// Forward all game messages to the game
+			err := gs.Game.GameMessage(id, msg.PayloadType, msg.Payload)
 			if err != nil {
-				log.Warn().Uint64("msg_type", msg.MessageType).Str("payload", string(msg.Payload)).Msg("unmarshal event")
+				log.Warn().Uint64("msg_type", msg.MessageType).Str("pay_type", msg.PayloadType).Msg("game msg")
 				break
 			}
-			gs.Game.SendEvents(evts)
 		default:
 			log.Warn().Uint64("msg_type", msg.MessageType).Msg("unknown type")
 		}

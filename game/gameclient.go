@@ -2,7 +2,10 @@ package game
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
+
+	"golang.org/x/xerrors"
 
 	"github.com/rs/zerolog/log"
 
@@ -21,9 +24,9 @@ type GameClient struct {
 	syncedTicks map[uint64][]events.Event
 
 	Log zerolog.Logger
-	// SendGameEvents is for pushing events to a game server.
-	SendGameEvents ClientSendEvents
-	ClientMode     bool
+	// SendGameMessage is for pushing events to a game server.
+	SendGameMessage func(msgType GameMessageType, payload []byte) error
+	ClientMode      bool
 }
 
 func NewGameClient(log zerolog.Logger, cfg GameConfig) *GameClient {
@@ -32,22 +35,65 @@ func NewGameClient(log zerolog.Logger, cfg GameConfig) *GameClient {
 		Log:         log,
 		syncedTicks: make(map[uint64][]events.Event),
 	}
-	if c.SendGameEvents == nil {
-		c.SendGameEvents = func(_ context.Context, evts []events.Event) error {
-			for i := range evts {
-				err := c.G.EC.SendEvent(evts[i])
-				if err != nil {
-					c.Log.Err(err).Msg("send evt")
-				}
-			}
-			return nil
-		}
-	}
+	c.SendGameMessage = c.GameMessage
 	return c
 }
 
+func (g *GameClient) GameMessage(msgType GameMessageType, data []byte) error {
+	switch msgType {
+	case MsgGameNewEvents:
+		// Only local mode should handle this
+		if !g.ClientMode {
+			var msg NewEvents
+			err := json.Unmarshal(data, &msg)
+			if err != nil {
+				return xerrors.Errorf("unmarshal game sync: %w", err)
+			}
+
+			for i := range msg.Eventlist {
+				err := g.G.EC.SendEvent(msg.Eventlist[i])
+				if err != nil {
+					g.Log.Err(err).Msg("send evt")
+				}
+			}
+
+		}
+	case MsgGameSync:
+		var msg GameSync
+		err := json.Unmarshal(data, &msg)
+		if err != nil {
+			return xerrors.Errorf("unmarshal game sync: %w", err)
+		}
+
+		// Lets do a full sync
+		if msg.GameTick > g.Gametick {
+			g.fullSync(msg)
+		}
+	case MsgTickEventList:
+		var msg TickEventList
+		err := json.Unmarshal(data, &msg)
+		if err != nil {
+			return xerrors.Errorf("unmarshal tick event list: %w", err)
+		}
+		g.ReceiveGameEvents(msg.GameTick, msg.Eventlist)
+		g.Log.Info().Uint64("tick", msg.GameTick).Uint64("behind", msg.GameTick-g.Gametick).Int("event_count", len(msg.Eventlist)).Msg("event sync")
+	default:
+		return xerrors.Errorf("msg type %s not recognized", msgType)
+	}
+	return nil
+}
+
+func (c *GameClient) fullSync(gameSync GameSync) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.G.World = gameSync.World
+	c.G.EC.ReplaceEventList(gameSync.EventList)
+	c.Gametick = gameSync.GameTick
+}
+
 // ReceiveGameEvents allows us to make advancements in our ticks
-func (c *GameClient) ReceiveGameEvents(ctx context.Context, gametick uint64, evts []events.Event) {
+func (c *GameClient) ReceiveGameEvents(gametick uint64, evts []events.Event) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if gametick < c.Gametick {
@@ -58,8 +104,8 @@ func (c *GameClient) ReceiveGameEvents(ctx context.Context, gametick uint64, evt
 	c.syncedTicks[gametick] = evts
 }
 
-func (c *GameClient) UseServer(send ClientSendEvents) *GameClient {
-	c.SendGameEvents = send
+func (c *GameClient) UseServer(send func(msgType GameMessageType, payload []byte) error) *GameClient {
+	c.SendGameMessage = send
 	c.ClientMode = true
 	return c
 }
@@ -77,6 +123,10 @@ func (c *GameClient) Update() error {
 				// TODO: Request a state sync to get past this
 				c.Log.Warn().Uint64("tick", c.Gametick).Msg("waiting for sync")
 				c.waiting = 0
+				err := c.SendGameMessage(MsgGameSync, []byte("{}"))
+				if err != nil {
+					return xerrors.Errorf("request game sync: %w", err)
+				}
 			}
 			return nil
 		}
