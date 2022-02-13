@@ -4,6 +4,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/emyrk/grow/world"
+
+	"github.com/emyrk/grow/game/events"
+
 	"github.com/emyrk/grow/internal/testdata"
 
 	"github.com/emyrk/grow/client/network"
@@ -81,12 +85,23 @@ var clientCmd = &cobra.Command{
 		msgs := nc.ReadMessages(ctx)
 		// TODO: Get all these game settings from the server
 		gD := testdata.TestGame()
+		me := world.RandomPlayer()
 
 		gc := game.NewGameClient(logger, gD.GameCfg).UseServer(
 			nc.SendGameMessage(ctx),
 		)
 		go network.HandleSocketMessages(ctx, gc, msgs)
-		gr := render.NewGameRenderer(gc, gD.Me)
+		gr := render.NewGameRenderer(gc, me)
+		err = gc.SendGameMessage(game.NewEventMsgPayload([]events.Event{
+			&events.PlayerJoin{
+				PlayerID: me.ID,
+				Color:    me.Color,
+				Team:     me.Team,
+			},
+		}))
+		if err != nil {
+			return xerrors.Errorf("player join evt: %w", err)
+		}
 
 		ebiten.SetWindowSize(screenWidth, screenHeight)
 		ebiten.SetWindowTitle("Game")

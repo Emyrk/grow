@@ -55,7 +55,7 @@ func (gs *Webserver) HandleGame(w http.ResponseWriter, r *http.Request) {
 		}
 	})
 
-	log := gs.Log.With().Uint16("pid", uint16(id)).Logger()
+	log := gs.Log.With().Uint64("pid", id).Logger()
 	for {
 		select {
 		case <-ctx.Done():

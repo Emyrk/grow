@@ -2,7 +2,8 @@ package world
 
 import (
 	"image/color"
-	"math/rand"
+
+	"github.com/emyrk/grow/internal/crand"
 )
 
 type PlayerSet map[PlayerID]*Player
@@ -24,7 +25,7 @@ func (s *PlayerSet) NewPlayer(team uint16, col color.RGBA) *Player {
 func (s *PlayerSet) AddPlayer(p *Player) *Player {
 	for {
 		if _, ok := (*s)[p.ID]; ok {
-			p.ID = PlayerID(rand.Uint32())
+			p.ID = crand.Uint64()
 			continue
 		}
 		break
@@ -33,7 +34,7 @@ func (s *PlayerSet) AddPlayer(p *Player) *Player {
 	return p
 }
 
-type PlayerID = uint16
+type PlayerID = uint64
 
 type Player struct {
 	ID    PlayerID
@@ -44,7 +45,7 @@ type Player struct {
 
 func NewPlayer(team uint16, col color.RGBA) *Player {
 	return &Player{
-		ID:    PlayerID(rand.Uint32()),
+		ID:    crand.Uint64(),
 		Team:  team,
 		Color: col,
 	}
@@ -52,9 +53,9 @@ func NewPlayer(team uint16, col color.RGBA) *Player {
 
 func RandomPlayer() *Player {
 	return NewPlayer(0, color.RGBA{
-		R: uint8(rand.Uint32()),
-		G: uint8(rand.Uint32()),
-		B: uint8(rand.Uint32()),
-		A: uint8(rand.Uint32()),
+		R: crand.Uint8(),
+		G: crand.Uint8(),
+		B: crand.Uint8(),
+		A: crand.Uint8(),
 	})
 }

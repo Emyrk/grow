@@ -13,6 +13,7 @@ type EventType string
 
 const (
 	LeftClickEvent = "left-click"
+	PlayerJoined   = "player-join"
 )
 
 type marshalStruct struct {
@@ -48,6 +49,8 @@ func UnmarshalJsonEvents(data []byte) ([]Event, error) {
 		switch gEvt.EventType {
 		case LeftClickEvent:
 			e = &ClickEvent{}
+		case PlayerJoined:
+			e = &PlayerJoin{}
 		}
 		err := json.Unmarshal(gEvt.Payload, e)
 		if err != nil {

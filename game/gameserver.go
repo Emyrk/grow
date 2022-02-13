@@ -53,7 +53,7 @@ func (g *GameServer) GameLoop(ctx context.Context) {
 }
 
 func (g *GameServer) GameMessage(playerID world.PlayerID, msgType GameMessageType, data []byte) error {
-	log := g.log.With().Uint16("pid", playerID).Str("msg_type", msgType).Int("pay_size", len(data)).Logger()
+	log := g.log.With().Uint64("pid", playerID).Str("msg_type", msgType).Int("pay_size", len(data)).Logger()
 	switch msgType {
 	case MsgTickEventList:
 		// TODO: Player needs these events
@@ -142,7 +142,7 @@ CmdLoop:
 			g.log.Err(err).Msg("marshal game state")
 		} else {
 			for k := range syncPlayers {
-				g.log.Info().Uint16("pid", k).Int("pay_size", len(worldData)).Msg("send game state")
+				g.log.Info().Uint64("pid", k).Int("pay_size", len(worldData)).Msg("send game state")
 				g.Listeners[k].BroadcastData(state.Type(), worldData)
 			}
 		}
@@ -170,6 +170,7 @@ func (g *GameServer) AddListener(id world.PlayerID, broadcast BroadcastGameMessa
 		BroadcastData: broadcast,
 	}
 	g.Listeners[id] = p
+	g.SendEvents([]events.Event{})
 	return p.NewEvents
 }
 
@@ -203,7 +204,7 @@ func (g *GameServer) WatchPlayer(p *ListeningPlayer) {
 			err := g.G.EC.SendEvent(e)
 			if err != nil {
 				// TODO: Notify the user
-				g.log.Err(err).Uint16("pid", uint16(p.ID)).Msg("send player event")
+				g.log.Err(err).Uint64("pid", p.ID).Msg("send player event")
 				break
 			}
 		}

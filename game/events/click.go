@@ -34,6 +34,9 @@ func (c *ClickEvent) Type() EventType {
 }
 
 func (c *ClickEvent) Tick(w *world.World) (Event, error) {
+	if _, ok := w.Players[c.Player.ID]; !ok {
+		return nil, nil
+	}
 	if c.Skipped > 0 {
 		c.Skipped--
 		return c, nil
