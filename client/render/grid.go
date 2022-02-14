@@ -1,6 +1,7 @@
 package render
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"time"
@@ -24,20 +25,39 @@ type GridRender struct {
 	*grid.Grid
 	log zerolog.Logger
 
-	cached map[uint64]*shape
+	cached   map[uint64]*shape
+	viewPort *ebiten.GeoM
 }
 
 func NewGridRenderer(log zerolog.Logger, g *grid.Grid) *GridRender {
 	return &GridRender{
-		Grid:   g,
-		log:    log.With().Str("service", "grid_render").Logger(),
-		cached: make(map[uint64]*shape),
+		Grid:     g,
+		log:      log.With().Str("service", "grid_render").Logger(),
+		cached:   make(map[uint64]*shape),
+		viewPort: &ebiten.GeoM{},
 	}
 }
 
 var last time.Time
 
 func (g *GridRender) Update() error {
+	if ebiten.IsKeyPressed(ebiten.KeyA) {
+		g.viewPort.Translate(-1, 0)
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyD) {
+		g.viewPort.Translate(1, 0)
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyW) {
+		g.viewPort.Translate(0, -1)
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyS) {
+		g.viewPort.Translate(0, 1)
+	}
+	dx, dy := ebiten.Wheel()
+	if dx != 0 || dy != 0 {
+		fmt.Println(dx, dy)
+	}
+
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		x, y := ebiten.CursorPosition()
 		sh := grid.NewShape([]image.Point{
@@ -68,7 +88,7 @@ func (g *GridRender) Update() error {
 }
 
 func (g *GridRender) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return g.Width, g.Height
+	return outsideWidth, outsideHeight
 }
 
 var i int
@@ -76,43 +96,46 @@ var i int
 // Render is mainly to help debugging
 func (g *GridRender) Draw(screen *ebiten.Image) {
 	for _, s := range g.Shapes {
-		if sImg, ok := g.cached[s.ID]; ok {
-			screen.DrawImage(sImg.Img, sImg.DrawOpts)
-			continue
-		}
+		sImg, ok := g.cached[s.ID]
+		if !ok {
+			dx, dy := s.BoundingRect.Dx(), s.BoundingRect.Dy()
+			if dx <= 0 || dy <= 0 {
+				continue
+			}
+			canvas := ebiten.NewImage(s.BoundingRect.Dx(), s.BoundingRect.Dy())
+			gCtx := gg.NewContextForImage(canvas)
 
-		dx, dy := s.BoundingRect.Dx(), s.BoundingRect.Dy()
-		if dx <= 0 || dy <= 0 {
-			continue
-		}
-		canvas := ebiten.NewImage(s.BoundingRect.Dx(), s.BoundingRect.Dy())
-		gCtx := gg.NewContextForImage(canvas)
-
-		gCtx.SetColor(s.Color)
-		pts := s.LocalPoints()
-		startPt := pts[0]
-		gCtx.MoveTo(float64(startPt.X), float64(startPt.Y))
-		for _, pt := range pts {
-			gCtx.LineTo(float64(pt.X), float64(pt.Y))
-		}
-		gCtx.LineTo(float64(startPt.X), float64(startPt.Y))
-		gCtx.SetFillStyle(gg.NewSolidPattern(s.Color))
-		gCtx.Fill()
-
-		gCtx.SetColor(color.White)
-		for _, pt := range pts {
-			gCtx.DrawPoint(float64(pt.X), float64(pt.Y), 5)
+			gCtx.SetColor(s.Color)
+			pts := s.LocalPoints()
+			startPt := pts[0]
+			gCtx.MoveTo(float64(startPt.X), float64(startPt.Y))
+			for _, pt := range pts {
+				gCtx.LineTo(float64(pt.X), float64(pt.Y))
+			}
+			gCtx.LineTo(float64(startPt.X), float64(startPt.Y))
+			gCtx.SetFillStyle(gg.NewSolidPattern(s.Color))
 			gCtx.Fill()
-		}
-		img := ebiten.NewImageFromImage(gCtx.Image())
 
-		opts := &ebiten.DrawImageOptions{}
-		opts.GeoM.Translate(float64(s.BoundingRect.Min.X), float64(s.BoundingRect.Min.Y))
-		g.cached[s.ID] = &shape{
-			S:        s,
-			DrawOpts: opts,
-			Img:      img,
+			gCtx.SetColor(color.White)
+			for _, pt := range pts {
+				gCtx.DrawPoint(float64(pt.X), float64(pt.Y), 5)
+				gCtx.Fill()
+			}
+			img := ebiten.NewImageFromImage(gCtx.Image())
+
+			opts := &ebiten.DrawImageOptions{}
+			opts.GeoM.Translate(float64(s.BoundingRect.Min.X), float64(s.BoundingRect.Min.Y))
+			sImg = &shape{
+				S:        s,
+				DrawOpts: opts,
+				Img:      img,
+			}
+			g.cached[s.ID] = sImg
 		}
-		screen.DrawImage(ebiten.NewImageFromImage(img), opts)
+		opts := *g.viewPort
+		opts.Translate(float64(s.BoundingRect.Min.X), float64(s.BoundingRect.Min.Y))
+		screen.DrawImage(sImg.Img, &ebiten.DrawImageOptions{
+			GeoM: opts,
+		})
 	}
 }
