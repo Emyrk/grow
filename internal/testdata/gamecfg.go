@@ -1,15 +1,16 @@
 package testdata
 
 import (
-	world2 "github.com/emyrk/grow/game/world"
 	"image/color"
+
+	world2 "github.com/emyrk/grow/game/world"
 
 	"github.com/emyrk/grow/game"
 )
 
 const (
-	screenWidth  = 600
-	screenHeight = 600
+	screenWidth  = 2048
+	screenHeight = 2048
 )
 
 type TestGameData struct {

@@ -87,7 +87,7 @@ func (ec *EventController) UpdateInOrder(w *world2.World, gametick uint64) (bool
 		}
 		// If it is nil, we delete the event from the ones we are tracking
 		if c == nil {
-			ec.log.Info().Uint64("eid", id).Msg("delete event")
+			//ec.log.Info().Uint64("eid", id).Msg("delete event")
 			delete(ec.existingEvents, id)
 			ec.eventOrder[idx] = 0
 		} else {

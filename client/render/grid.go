@@ -1,7 +1,6 @@
 package render
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"time"
@@ -41,10 +40,14 @@ var last time.Time
 func (g *GridRender) Update() error {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		x, y := ebiten.CursorPosition()
-		sh := grid.NewDiamond(image.Point{
-			X: x,
-			Y: y,
-		}, 50)
+		sh := grid.NewShape([]image.Point{
+			{X: x, Y: y},
+		})
+
+		//sh := grid.NewDiamond(image.Point{
+		//	X: x,
+		//	Y: y,
+		//}, 50)
 		g.AddShape(sh)
 		g.log.Info().Msg("Draw diamond")
 	}
@@ -78,12 +81,15 @@ func (g *GridRender) Draw(screen *ebiten.Image) {
 			continue
 		}
 
+		dx, dy := s.BoundingRect.Dx(), s.BoundingRect.Dy()
+		if dx <= 0 || dy <= 0 {
+			continue
+		}
 		canvas := ebiten.NewImage(s.BoundingRect.Dx(), s.BoundingRect.Dy())
 		gCtx := gg.NewContextForImage(canvas)
 
 		gCtx.SetColor(s.Color)
 		pts := s.LocalPoints()
-		fmt.Println(pts)
 		startPt := pts[0]
 		gCtx.MoveTo(float64(startPt.X), float64(startPt.Y))
 		for _, pt := range pts {

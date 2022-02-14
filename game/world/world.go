@@ -34,6 +34,10 @@ func NewWorld(width, height int, players PlayerSet) *World {
 
 // Claim sets the tile to the player's GetID
 func (w *World) Claim(x, y int, playerID PlayerID) {
+	if x < 0 || y < 0 || x > w.MapWidth || y > w.MapHeight {
+		return
+	}
+
 	w.PlayerTiles[w.PointI(x, y)] = playerID
 }
 

@@ -1,6 +1,8 @@
 package game
 
 import (
+	"time"
+
 	"github.com/emyrk/grow/game/events"
 	world2 "github.com/emyrk/grow/game/world"
 	"github.com/rs/zerolog"
@@ -21,6 +23,8 @@ type Game struct {
 	World *world2.World
 	EC    *events.EventController
 	Log   zerolog.Logger
+
+	expSec time.Time
 }
 
 func NewGame(log zerolog.Logger, cfg GameConfig) *Game {
@@ -33,6 +37,10 @@ func NewGame(log zerolog.Logger, cfg GameConfig) *Game {
 
 // Update is called every 1/60 of a second
 func (g *Game) Update(gametick uint64) (bool, []events.Event) {
+	if gametick%60 == 0 {
+		g.Log.Info().Float64("dur", time.Since(g.expSec).Seconds()).Msg("exp 1 sec")
+		g.expSec = time.Now()
+	}
 	processEvents, evts := g.EC.Update(g.World, gametick)
 	g.World.Update()
 	return processEvents, evts
