@@ -11,11 +11,15 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/go-chi/chi/v5 v5.0.7 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20210727001814-0db043d8d5be // indirect
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
+	github.com/golang/geo v0.0.0-20180826223333-635502111454 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jezek/xgb v0.0.0-20210312150743-0e0f116e1240 // indirect
 	github.com/klauspost/compress v1.10.3 // indirect
+	github.com/markus-wa/quickhull-go v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.1.1 // indirect

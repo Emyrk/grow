@@ -2,27 +2,30 @@ package game
 
 import (
 	"github.com/emyrk/grow/game/events"
-	"github.com/emyrk/grow/world"
+	world2 "github.com/emyrk/grow/game/world"
 	"github.com/rs/zerolog"
 )
 
 type BroadcastGameMessage func(msgType GameMessageType, data []byte)
 
 type GameConfig struct {
-	Players world.PlayerSet
+	Players world2.PlayerSet
 	Width   int
 	Height  int
 }
 
 type Game struct {
-	World *world.World
+	// Started indicates the game started. No one else can join
+	Started bool
+
+	World *world2.World
 	EC    *events.EventController
 	Log   zerolog.Logger
 }
 
 func NewGame(log zerolog.Logger, cfg GameConfig) *Game {
 	return &Game{
-		World: world.NewWorld(cfg.Width, cfg.Height, cfg.Players),
+		World: world2.NewWorld(cfg.Width, cfg.Height, cfg.Players),
 		EC:    events.NewEventController(log),
 		Log:   log.With().Str("service", "game").Logger(),
 	}

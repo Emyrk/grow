@@ -1,14 +1,13 @@
 package events
 
 import (
+	world2 "github.com/emyrk/grow/game/world"
 	"image/color"
-
-	"github.com/emyrk/grow/world"
 )
 
 type PlayerJoin struct {
 	baseEvent
-	PlayerID world.PlayerID
+	PlayerID world2.PlayerID
 	Color    color.RGBA
 	Team     uint16
 }
@@ -17,8 +16,8 @@ func (c *PlayerJoin) Type() EventType {
 	return PlayerJoined
 }
 
-func (c *PlayerJoin) Tick(w *world.World) (Event, error) {
-	p := &world.Player{
+func (c *PlayerJoin) Tick(w *world2.World) (Event, error) {
+	p := &world2.Player{
 		ID:    c.PlayerID,
 		Color: c.Color,
 		Team:  0,

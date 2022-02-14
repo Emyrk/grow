@@ -2,12 +2,12 @@ package render
 
 import (
 	"encoding/json"
+	world2 "github.com/emyrk/grow/game/world"
 
 	"golang.org/x/xerrors"
 
 	"github.com/emyrk/grow/client/keybinds"
 	"github.com/emyrk/grow/game"
-	"github.com/emyrk/grow/world"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -18,7 +18,7 @@ type GameRender struct {
 	pixels     []byte
 }
 
-func NewGameRenderer(g *game.GameClient, me *world.Player) *GameRender {
+func NewGameRenderer(g *game.GameClient, me *world2.Player) *GameRender {
 	return &GameRender{
 		GameClient: g,
 		keyWatcher: keybinds.NewKeybinds(me),

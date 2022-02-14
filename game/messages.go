@@ -2,7 +2,7 @@ package game
 
 import (
 	"github.com/emyrk/grow/game/events"
-	"github.com/emyrk/grow/world"
+	world2 "github.com/emyrk/grow/game/world"
 )
 
 type GameMessageType = string
@@ -29,7 +29,7 @@ func (TickEventList) Type() GameMessageType {
 
 // GameSync is all the data you need to instantly go to a game tick
 type GameSync struct {
-	World *world.World
+	World *world2.World
 	// Present list of game events at the game tick in the correct order to be processed for THIS game tick
 	EventList events.EventList
 	GameTick  uint64
@@ -41,7 +41,7 @@ func (GameSync) Type() GameMessageType {
 
 // NewEvents is the list of new events for a given game tick.
 type NewEvents struct {
-	Player    world.PlayerID
+	Player    world2.PlayerID
 	Eventlist events.EventList
 }
 

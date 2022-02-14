@@ -1,11 +1,10 @@
 package testdata
 
 import (
+	world2 "github.com/emyrk/grow/game/world"
 	"image/color"
 
 	"github.com/emyrk/grow/game"
-
-	"github.com/emyrk/grow/world"
 )
 
 const (
@@ -14,19 +13,19 @@ const (
 )
 
 type TestGameData struct {
-	Me      *world.Player
+	Me      *world2.Player
 	GameCfg game.GameConfig
 }
 
 func TestGame() TestGameData {
-	me := world.NewPlayer(0, color.RGBA{
+	me := world2.NewPlayer(0, color.RGBA{
 		// 844a93
 		R: 0x84,
 		G: 0x4a,
 		B: 0x93,
 		A: 0xff,
 	})
-	players := world.NewPlayerSet()
+	players := world2.NewPlayerSet()
 	me = players.AddPlayer(me)
 
 	return TestGameData{

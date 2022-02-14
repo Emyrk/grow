@@ -1,16 +1,16 @@
 package events_test
 
 import (
+	world2 "github.com/emyrk/grow/game/world"
 	"math/rand"
 	"testing"
 
 	"github.com/emyrk/grow/game/events"
-	"github.com/emyrk/grow/world"
 	"github.com/stretchr/testify/require"
 )
 
 func TestMarshal(t *testing.T) {
-	ps := world.NewPlayerSet()
+	ps := world2.NewPlayerSet()
 	p := ps.AddRandomPlayer()
 	testCases := []struct {
 		Evts []events.Event

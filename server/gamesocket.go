@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	world2 "github.com/emyrk/grow/game/world"
 	"net/http"
 
 	"github.com/emyrk/grow/internal/network"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/emyrk/grow/internal/crand"
 	"github.com/emyrk/grow/server/message"
-	"github.com/emyrk/grow/world"
 	"nhooyr.io/websocket"
 	"nhooyr.io/websocket/wsjson"
 )
@@ -28,7 +28,7 @@ func (gs *Webserver) HandleGame(w http.ResponseWriter, r *http.Request) {
 	}
 	c.SetReadLimit(network.ReadLimit)
 
-	id := world.PlayerID(crand.Uint64())
+	id := world2.PlayerID(crand.Uint64())
 	stopClient := func() {
 		cancel()
 		gs.Game.RemoveListener(id)

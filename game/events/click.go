@@ -1,14 +1,13 @@
 package events
 
 import (
+	world2 "github.com/emyrk/grow/game/world"
 	"image"
-
-	"github.com/emyrk/grow/world"
 )
 
 type ClickEvent struct {
 	baseEvent
-	Player   *world.Player
+	Player   *world2.Player
 	Pos      image.Point
 	Current  int
 	Duration int
@@ -16,7 +15,7 @@ type ClickEvent struct {
 	Skipped  int
 }
 
-func NewClickEvent(player *world.Player, x, y int) *ClickEvent {
+func NewClickEvent(player *world2.Player, x, y int) *ClickEvent {
 	return &ClickEvent{
 		baseEvent: newBaseEvent(),
 		Player:    player,
@@ -33,7 +32,7 @@ func (c *ClickEvent) Type() EventType {
 	return LeftClickEvent
 }
 
-func (c *ClickEvent) Tick(w *world.World) (Event, error) {
+func (c *ClickEvent) Tick(w *world2.World) (Event, error) {
 	if _, ok := w.Players[c.Player.ID]; !ok {
 		return nil, nil
 	}

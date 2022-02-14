@@ -3,6 +3,7 @@ package game
 import (
 	"context"
 	"encoding/json"
+	world2 "github.com/emyrk/grow/game/world"
 	"reflect"
 	"sync"
 	"time"
@@ -10,7 +11,6 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/emyrk/grow/game/events"
-	"github.com/emyrk/grow/world"
 	"github.com/rs/zerolog"
 )
 
@@ -22,14 +22,14 @@ type GameServer struct {
 
 	log       zerolog.Logger
 	mu        sync.RWMutex
-	Listeners map[world.PlayerID]*ListeningPlayer
+	Listeners map[world2.PlayerID]*ListeningPlayer
 	Commands  chan interface{}
 }
 
 func NewGameServer(log zerolog.Logger, cfg GameConfig) *GameServer {
 	c := &GameServer{
 		G:         NewGame(log, cfg),
-		Listeners: make(map[world.PlayerID]*ListeningPlayer),
+		Listeners: make(map[world2.PlayerID]*ListeningPlayer),
 		log:       log,
 		Commands:  make(chan interface{}, 100),
 	}
@@ -52,7 +52,7 @@ func (g *GameServer) GameLoop(ctx context.Context) {
 	}
 }
 
-func (g *GameServer) GameMessage(playerID world.PlayerID, msgType GameMessageType, data []byte) error {
+func (g *GameServer) GameMessage(playerID world2.PlayerID, msgType GameMessageType, data []byte) error {
 	log := g.log.With().Uint64("pid", playerID).Str("msg_type", msgType).Int("pay_size", len(data)).Logger()
 	switch msgType {
 	case MsgTickEventList:
@@ -60,7 +60,7 @@ func (g *GameServer) GameMessage(playerID world.PlayerID, msgType GameMessageTyp
 		fallthrough // For now, just send them a full sync
 	case MsgGameSync:
 		// Send the player a sync
-		cmd := &CreateGameSync{Players: []world.PlayerID{playerID}}
+		cmd := &CreateGameSync{Players: []world2.PlayerID{playerID}}
 		g.Commands <- cmd
 		log.Info().Msg("request game sync")
 	case MsgGameNewEvents:
@@ -108,7 +108,7 @@ func (g *GameServer) Update() error {
 }
 
 func (g *GameServer) handleCommands() {
-	syncPlayers := make(map[world.PlayerID]struct{})
+	syncPlayers := make(map[world2.PlayerID]struct{})
 
 CmdLoop:
 	for {
@@ -160,7 +160,7 @@ func (g *GameServer) SendEvents(es []events.Event) {
 
 // AddListener adds a new listener to the game. The listener can submit event requests through the events
 // channel.
-func (g *GameServer) AddListener(id world.PlayerID, broadcast BroadcastGameMessage) chan<- events.Event {
+func (g *GameServer) AddListener(id world2.PlayerID, broadcast BroadcastGameMessage) chan<- events.Event {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
@@ -174,7 +174,7 @@ func (g *GameServer) AddListener(id world.PlayerID, broadcast BroadcastGameMessa
 	return p.NewEvents
 }
 
-func (g *GameServer) RemoveListener(id world.PlayerID) {
+func (g *GameServer) RemoveListener(id world2.PlayerID) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
@@ -186,7 +186,7 @@ func (g *GameServer) RemoveListener(id world.PlayerID) {
 }
 
 type ListeningPlayer struct {
-	ID world.PlayerID
+	ID world2.PlayerID
 	// NewEvents are events the player has submitted to be recorded in the controller.
 	NewEvents     chan events.Event
 	BroadcastData func(msgType GameMessageType, data []byte)

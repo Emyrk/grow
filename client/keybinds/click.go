@@ -2,7 +2,7 @@ package keybinds
 
 import (
 	"github.com/emyrk/grow/game/events"
-	"github.com/emyrk/grow/world"
+	world2 "github.com/emyrk/grow/game/world"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -10,12 +10,12 @@ import (
 // KeyWatcher watches all user keystrokes
 type KeyWatcher struct {
 	// You have to know who you are to create events on your own behalf
-	me *world.Player
+	me *world2.Player
 
 	Click ebiten.MouseButton
 }
 
-func NewKeybinds(me *world.Player) *KeyWatcher {
+func NewKeybinds(me *world2.Player) *KeyWatcher {
 	return &KeyWatcher{
 		me:    me,
 		Click: ebiten.MouseButtonLeft,

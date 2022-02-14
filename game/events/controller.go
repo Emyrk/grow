@@ -1,7 +1,7 @@
 package events
 
 import (
-	"github.com/emyrk/grow/world"
+	world2 "github.com/emyrk/grow/game/world"
 	"github.com/rs/zerolog"
 	"golang.org/x/xerrors"
 )
@@ -69,7 +69,7 @@ func (ec *EventController) EventList() []Event {
 	return list
 }
 
-func (ec *EventController) UpdateInOrder(w *world.World, gametick uint64) (bool, []Event) {
+func (ec *EventController) UpdateInOrder(w *world2.World, gametick uint64) (bool, []Event) {
 	syncTick := SyncTick(gametick)
 	var cleaned []uint64
 	// Process all events in the given event order.
@@ -133,7 +133,7 @@ func (ec *EventController) UpdateInOrder(w *world.World, gametick uint64) (bool,
 	return syncTick, newEvents
 }
 
-func (ec *EventController) Update(w *world.World, gametick uint64) (bool, []Event) {
+func (ec *EventController) Update(w *world2.World, gametick uint64) (bool, []Event) {
 	sync, events := ec.UpdateInOrder(w, gametick)
 	return sync, events
 }

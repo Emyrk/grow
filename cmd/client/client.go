@@ -1,10 +1,9 @@
 package main
 
 import (
+	world2 "github.com/emyrk/grow/game/world"
 	"strings"
 	"time"
-
-	"github.com/emyrk/grow/world"
 
 	"github.com/emyrk/grow/game/events"
 
@@ -85,7 +84,7 @@ var clientCmd = &cobra.Command{
 		msgs := nc.ReadMessages(ctx)
 		// TODO: Get all these game settings from the server
 		gD := testdata.TestGame()
-		me := world.RandomPlayer()
+		me := world2.RandomPlayer()
 
 		gc := game.NewGameClient(logger, gD.GameCfg).UseServer(
 			nc.SendGameMessage(ctx),
