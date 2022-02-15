@@ -1,7 +1,6 @@
 package render
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"time"
@@ -41,33 +40,38 @@ func NewGridRenderer(log zerolog.Logger, g *grid.Grid) *GridRender {
 var last time.Time
 
 func (g *GridRender) Update() error {
+	speed := float64(5)
 	if ebiten.IsKeyPressed(ebiten.KeyA) {
-		g.viewPort.Translate(-1, 0)
+		g.viewPort.Translate(1*speed, 0)
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyD) {
-		g.viewPort.Translate(1, 0)
+		g.viewPort.Translate(-1*speed, 0)
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyW) {
-		g.viewPort.Translate(0, -1)
+		g.viewPort.Translate(0, 1*speed)
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyS) {
-		g.viewPort.Translate(0, 1)
+		g.viewPort.Translate(0, -1*speed)
 	}
-	dx, dy := ebiten.Wheel()
-	if dx != 0 || dy != 0 {
-		fmt.Println(dx, dy)
+	_, dy := ebiten.Wheel()
+	if dy != 0 {
+		rs := 1.25
+		if dy < 0 {
+			rs = 0.75
+		}
+		g.viewPort.Scale(rs, rs)
 	}
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		x, y := ebiten.CursorPosition()
-		sh := grid.NewShape([]image.Point{
-			{X: x, Y: y},
-		})
+		//sh := grid.NewShape([]image.Point{
+		//	{X: x, Y: y},
+		//})
 
-		//sh := grid.NewDiamond(image.Point{
-		//	X: x,
-		//	Y: y,
-		//}, 50)
+		sh := grid.NewDiamond(image.Point{
+			X: x,
+			Y: y,
+		}, 50)
 		g.AddShape(sh)
 		g.log.Info().Msg("Draw diamond")
 	}
@@ -95,6 +99,7 @@ var i int
 
 // Render is mainly to help debugging
 func (g *GridRender) Draw(screen *ebiten.Image) {
+	game := ebiten.NewImage(g.Width, g.Height)
 	for _, s := range g.Shapes {
 		sImg, ok := g.cached[s.ID]
 		if !ok {
@@ -132,10 +137,10 @@ func (g *GridRender) Draw(screen *ebiten.Image) {
 			}
 			g.cached[s.ID] = sImg
 		}
-		opts := *g.viewPort
-		opts.Translate(float64(s.BoundingRect.Min.X), float64(s.BoundingRect.Min.Y))
-		screen.DrawImage(sImg.Img, &ebiten.DrawImageOptions{
-			GeoM: opts,
-		})
+		game.DrawImage(sImg.Img, sImg.DrawOpts)
 	}
+	screen.DrawImage(game, &ebiten.DrawImageOptions{
+		GeoM: *g.viewPort,
+	})
+	//screen.DrawTriangles()
 }
