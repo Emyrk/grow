@@ -4,6 +4,7 @@ import (
 	"github.com/emyrk/grow/client/render"
 	mycmd "github.com/emyrk/grow/cmd"
 	"github.com/emyrk/grow/game/world/grid"
+	"github.com/emyrk/grow/internal/testdata"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/spf13/cobra"
 )
@@ -17,9 +18,9 @@ var gridCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		//ctx := cmd.Context()
 		logger := mycmd.MustLogger(cmd)
-		g := render.NewGridRenderer(logger, grid.NewGrid(screenWidth, screenHeight))
+		g := render.NewGridRenderer(logger, grid.NewGrid(testdata.ScreenWidth, testdata.ScreenHeight))
 
-		ebiten.SetWindowSize(screenWidth, screenHeight)
+		ebiten.SetWindowSize(g.Width, g.Height)
 		ebiten.SetWindowTitle("GridTesting")
 		ebiten.SetWindowResizable(true)
 		if err := ebiten.RunGame(g); err != nil {

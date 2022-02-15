@@ -47,8 +47,13 @@ func (w *World) PlayerStart(playerID PlayerID, x, y int) {
 
 func (w *World) Attack(att PlayerID, x, y int, strength int) {
 	borderPxs := w.PlayerBorders[att]
-	if borderPxs == nil || strength <= 0 {
+	if borderPxs == nil {
 		return // No attack
+	}
+
+	idx := w.PointI(x, y)
+	if !w.SafeTile(idx) {
+		return
 	}
 
 	def := w.PlayerTiles[w.PointI(x, y)]
@@ -57,7 +62,7 @@ func (w *World) Attack(att PlayerID, x, y int, strength int) {
 
 func (w *World) attack(att PlayerID, def PlayerID, strength int) int {
 	borderPxs := w.PlayerBorders[att]
-	if borderPxs == nil || strength <= 0 {
+	if borderPxs == nil {
 		return 0 // No attack
 	}
 
@@ -66,29 +71,62 @@ func (w *World) attack(att PlayerID, def PlayerID, strength int) int {
 		return 0
 	}
 
+	var buckets [1000][]int
+	for _, px := range defPx {
+		if w.PlayerTiles[px] != def {
+			continue // Don't add pixels that are wrong
+		}
+		var friends int
+		neighbors := w.aroundXY(w.PointXY(px))
+		for _, v := range neighbors {
+			if !w.SafeTile(v) {
+				continue
+			}
+			if w.PlayerTiles[v] == att {
+				friends++
+			}
+		}
+		w.MapTiles[px] = tile(friends * 2)
+		buckets[friends] = append(buckets[friends], px)
+	}
+
+	if strength == 0 {
+		return 0
+	}
+
 	// Refresh the borders after each attack for now
 	w.PlayerBorders[att][def] = make([]int, 0)
-	var c int
+	var claimed int
 	var consumed int
-	for _, px := range defPx {
-		consumed++
-		fnd := w.PlayerTiles[px]
-		if fnd != def {
+	friends := len(buckets) - 1
+	left := make([]int, 0)
+	for ; friends >= 0; friends-- {
+		consumed = 0
+		next := buckets[friends]
+		if claimed >= strength {
+			left = append(left, next...)
 			continue
 		}
+		for _, px := range next {
+			consumed++
+			fnd := w.PlayerTiles[px]
+			if fnd != def {
+				continue
+			}
 
-		ax, ay := w.PointXY(px)
-		w.Claim(att, ax, ay)
-		c++
-		if c >= strength {
-			break
+			ax, ay := w.PointXY(px)
+			w.Claim(att, ax, ay)
+			claimed++
+			if claimed >= strength {
+				left = make([]int, len(next)-consumed)
+				copy(left, next[consumed:])
+				break
+			}
 		}
 	}
 
-	left := make([]int, len(defPx)-consumed)
-	copy(left, defPx[consumed:])
 	w.PlayerBorders[att][def] = append(left, w.PlayerBorders[att][def]...)
-	return w.attack(att, def, strength-consumed)
+	return w.attack(att, def, strength-claimed)
 }
 
 // Claim sets the tile to the player's GetID
@@ -148,6 +186,12 @@ func (w *World) aroundXY(x, y int) []int {
 		w.PointI(x+1, y), // East
 		w.PointI(x, y+1), // South
 		w.PointI(x-1, y), // West
+
+		w.PointI(x+1, y-1), // NE
+		w.PointI(x-1, y-1), // NW
+
+		w.PointI(x+1, y+1), // SE
+		w.PointI(x-1, y+1), // SW
 	}
 }
 
@@ -178,17 +222,28 @@ func (w *World) Height() int {
 	return w.MapHeight
 }
 
+func (w *World) SafeTile(idx int) bool {
+	if idx < 0 || idx >= len(w.PlayerTiles) {
+		return false
+	}
+	return true
+}
+
 func (w *World) Draw(pix []byte) {
 	for i, v := range w.PlayerTiles {
 		var tileColor = color.RGBA{}
 		if v == 0 {
-			switch w.MapTiles[i] {
+			mv := w.MapTiles[i]
+			switch mv {
 			case TileBlocked:
 				tileColor = color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0xff}
 			case TileWater:
 				tileColor = color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}
 			case TileLand:
 				tileColor = color.RGBA{R: 0x00, G: 0xff, B: 0x00, A: 0xff}
+			default:
+				mu := uint8(mv) * 10
+				tileColor = color.RGBA{R: mu, G: mu, B: mu, A: 0xff}
 			}
 		} else {
 			player, ok := w.Players[v]

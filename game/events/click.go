@@ -14,9 +14,11 @@ type ClickEvent struct {
 	Duration int
 	Skip     int
 	Skipped  int
+
+	Left bool
 }
 
-func NewClickEvent(player *world2.Player, x, y int) *ClickEvent {
+func NewClickEvent(player *world2.Player, left bool, x, y int) *ClickEvent {
 	return &ClickEvent{
 		baseEvent: newBaseEvent(),
 		Player:    player,
@@ -24,13 +26,14 @@ func NewClickEvent(player *world2.Player, x, y int) *ClickEvent {
 			X: x,
 			Y: y,
 		},
-		Duration: 20,
-		Skip:     5,
+		Duration: 5,
+		Skip:     0,
+		Left:     left,
 	}
 }
 
 func (c *ClickEvent) Type() EventType {
-	return LeftClickEvent
+	return MouseClickEvent
 }
 
 func (c *ClickEvent) Tick(gametick uint64, w *world2.World) (Event, error) {
@@ -38,7 +41,24 @@ func (c *ClickEvent) Tick(gametick uint64, w *world2.World) (Event, error) {
 		return nil, nil
 	}
 
-	w.Attack(c.Player.ID, c.Pos.X, c.Pos.Y, int(gametick%10000))
+	if c.Skipped > 0 {
+		c.Skipped--
+		return c, nil
+	}
+
+	c.Current++
+	c.Skipped = c.Skip
+	if c.Current > c.Duration {
+		return nil, nil
+	}
+
+	if c.Left {
+		for i := 0; i < 200; i++ {
+			w.Attack(c.Player.ID, c.Pos.X, c.Pos.Y, 1)
+		}
+		return c, nil
+	}
+	w.Attack(c.Player.ID, c.Pos.X, c.Pos.Y, 0)
 	return nil, nil
 
 	if c.Skipped > 0 {

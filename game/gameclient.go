@@ -123,7 +123,6 @@ func (c *GameClient) Update() error {
 				// TODO: Request a state sync to get past this
 				c.Log.Warn().Uint64("tick", c.Gametick).Msg("waiting for sync")
 				c.waiting = 0
-				return nil
 				err := c.SendGameMessage(MsgGameSync, []byte("{}"))
 				if err != nil {
 					return xerrors.Errorf("request game sync: %w", err)

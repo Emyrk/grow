@@ -13,8 +13,8 @@ import (
 type EventType string
 
 const (
-	LeftClickEvent = "left-click"
-	PlayerJoined   = "player-join"
+	MouseClickEvent = "click"
+	PlayerJoined    = "player-join"
 )
 
 type marshalStruct struct {
@@ -48,7 +48,7 @@ func UnmarshalJsonEvents(data []byte) ([]Event, error) {
 	for _, gEvt := range gEvts {
 		var e Event
 		switch gEvt.EventType {
-		case LeftClickEvent:
+		case MouseClickEvent:
 			e = &ClickEvent{}
 		case PlayerJoined:
 			e = &PlayerJoin{}

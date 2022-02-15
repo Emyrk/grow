@@ -32,7 +32,7 @@ var srvCommand = &cobra.Command{
 		gD := testdata.TestGame()
 		gme := game.NewGameServer(log, gD.GameCfg)
 		go func() {
-			time.Sleep(time.Second * 10)
+			time.Sleep(time.Second * 5)
 			gme.GameLoop(ctx)
 		}()
 
