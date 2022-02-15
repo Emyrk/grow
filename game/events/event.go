@@ -2,6 +2,7 @@ package events
 
 import (
 	"encoding/json"
+
 	world2 "github.com/emyrk/grow/game/world"
 
 	"golang.org/x/xerrors"
@@ -86,7 +87,7 @@ type Event interface {
 	GetID() uint64
 	Type() EventType
 	// Tick will allow the event to advance 1 tick. If the event is done, it should return a nil.
-	Tick(w *world2.World) (Event, error)
+	Tick(gametick uint64, w *world2.World) (Event, error)
 
 	// Should optimize data later
 	//MarshalBinary() ([]byte, error)

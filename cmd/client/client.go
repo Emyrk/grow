@@ -1,9 +1,10 @@
 package main
 
 import (
-	world2 "github.com/emyrk/grow/game/world"
 	"strings"
 	"time"
+
+	"github.com/emyrk/grow/game/world"
 
 	"github.com/emyrk/grow/game/events"
 
@@ -22,7 +23,7 @@ import (
 )
 
 func init() {
-	clientCmd.Flags().StringP("address", "a", "ws://localhost:8080", "Server address")
+	clientCmd.Flags().StringP("address", "a", "ws://localhost:8060", "Server address")
 	mycmd.RootCmd.AddCommand(clientCmd)
 	mycmd.RootCmd.AddCommand(localClient)
 }
@@ -34,11 +35,6 @@ func main() {
 	mycmd.Run()
 }
 
-const (
-	screenWidth  = 600
-	screenHeight = 600
-)
-
 var localClient = &cobra.Command{
 	Use:   "local",
 	Short: "Local copy of the game",
@@ -48,10 +44,21 @@ var localClient = &cobra.Command{
 
 		// TODO: Get all these game settings from the server
 		gD := testdata.TestGame()
+		me := world.RandomPlayer()
 		gc := game.NewGameClient(logger, gD.GameCfg)
-		gr := render.NewGameRenderer(gc, gD.Me)
+		err := gc.SendGameMessage(game.NewEventMsgPayload([]events.Event{
+			&events.PlayerJoin{
+				PlayerID: me.ID,
+				Color:    me.Color,
+				Team:     me.Team,
+			},
+		}))
+		if err != nil {
+			return err
+		}
+		gr := render.NewGameRenderer(gc, me)
 
-		ebiten.SetWindowSize(screenWidth, screenHeight)
+		ebiten.SetWindowSize(testdata.ScreenWidth, testdata.ScreenHeight)
 		ebiten.SetWindowTitle("Game")
 		ebiten.SetWindowResizable(true)
 		if err := ebiten.RunGame(gr); err != nil {
@@ -84,7 +91,7 @@ var clientCmd = &cobra.Command{
 		msgs := nc.ReadMessages(ctx)
 		// TODO: Get all these game settings from the server
 		gD := testdata.TestGame()
-		me := world2.RandomPlayer()
+		me := world.RandomPlayer()
 
 		gc := game.NewGameClient(logger, gD.GameCfg).UseServer(
 			nc.SendGameMessage(ctx),
@@ -102,7 +109,7 @@ var clientCmd = &cobra.Command{
 			return xerrors.Errorf("player join evt: %w", err)
 		}
 
-		ebiten.SetWindowSize(screenWidth, screenHeight)
+		ebiten.SetWindowSize(gD.GameCfg.Width, gD.GameCfg.Height)
 		ebiten.SetWindowTitle("Game")
 		ebiten.SetWindowResizable(true)
 		if err := ebiten.RunGame(gr); err != nil {

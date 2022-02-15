@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	screenWidth  = 2048
-	screenHeight = 2048
+	ScreenWidth  = 600
+	ScreenHeight = 600
 )
 
 type TestGameData struct {
@@ -33,8 +33,8 @@ func TestGame() TestGameData {
 		Me: me,
 		GameCfg: game.GameConfig{
 			Players: players,
-			Width:   screenWidth,
-			Height:  screenHeight,
+			Width:   ScreenWidth,
+			Height:  ScreenHeight,
 		},
 	}
 }

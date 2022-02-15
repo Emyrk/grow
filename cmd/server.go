@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	srvCommand.Flags().IntP("port", "p", 8080, "port for the game server")
+	srvCommand.Flags().IntP("port", "p", 8060, "port for the game server")
 	RootCmd.AddCommand(srvCommand)
 }
 
@@ -32,7 +32,7 @@ var srvCommand = &cobra.Command{
 		gD := testdata.TestGame()
 		gme := game.NewGameServer(log, gD.GameCfg)
 		go func() {
-			time.Sleep(time.Second * 5)
+			time.Sleep(time.Second * 10)
 			gme.GameLoop(ctx)
 		}()
 

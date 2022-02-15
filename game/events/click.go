@@ -1,8 +1,9 @@
 package events
 
 import (
-	world2 "github.com/emyrk/grow/game/world"
 	"image"
+
+	world2 "github.com/emyrk/grow/game/world"
 )
 
 type ClickEvent struct {
@@ -32,10 +33,14 @@ func (c *ClickEvent) Type() EventType {
 	return LeftClickEvent
 }
 
-func (c *ClickEvent) Tick(w *world2.World) (Event, error) {
+func (c *ClickEvent) Tick(gametick uint64, w *world2.World) (Event, error) {
 	if _, ok := w.Players[c.Player.ID]; !ok {
 		return nil, nil
 	}
+
+	w.Attack(c.Player.ID, c.Pos.X, c.Pos.Y, int(gametick%10000))
+	return nil, nil
+
 	if c.Skipped > 0 {
 		c.Skipped--
 		return c, nil
@@ -51,7 +56,7 @@ func (c *ClickEvent) Tick(w *world2.World) (Event, error) {
 
 	for cx := tlx; cx < brx; cx++ {
 		for cy := tly; cy > bry; cy-- {
-			w.Claim(cx, cy, c.Player.ID)
+			w.Claim(c.Player.ID, cx, cy)
 		}
 	}
 

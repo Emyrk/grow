@@ -79,7 +79,7 @@ func (ec *EventController) UpdateInOrder(w *world2.World, gametick uint64) (bool
 			continue
 		}
 		// Tick the event and get a new one
-		c, err := ec.existingEvents[id].Tick(w)
+		c, err := ec.existingEvents[id].Tick(gametick, w)
 		if err != nil {
 			AddLogFields(ec.log.Error(), c).
 				Err(err).
@@ -109,7 +109,7 @@ func (ec *EventController) UpdateInOrder(w *world2.World, gametick uint64) (bool
 					continue
 				}
 				newEvents = append(newEvents, e)
-				c, err := e.Tick(w)
+				c, err := e.Tick(gametick, w)
 				if err != nil {
 					AddLogFields(ec.log.Error(), c).
 						Err(err).
